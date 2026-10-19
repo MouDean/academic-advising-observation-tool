@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Restoration Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .restore-box {
+            background-color: white;
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .backup-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .backup-item:hover {
+            background-color: #e9ecef;
+        }
+        .backup-item.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="restore-box">
+        <h1>🔄 Website Restoration Tool</h1>
+        <p>This tool will restore your website to its state from August 21st, 9:00 PM.</p>
+        
+        <div class="info">
+            <strong>⚠️ Warning:</strong> This will replace all current data with the backup data. Make sure you want to proceed.
+        </div>
+        
+        <div id="backup-list">
+            <h3>Available Backups:</h3>
+            <div id="backups-container">
+                <p>Loading backups...</p>
+            </div>
+        </div>
+        
+        <div id="restore-controls" style="display: none;">
+            <h3>Restore Options:</h3>
+            <button class="button" onclick="restoreSelectedBackup()">🔄 Restore Selected Backup</button>
+            <button class="button danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+            <button class="button" onclick="refreshBackups()">🔄 Refresh Backups</button>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let selectedBackup = null;
+        const targetTime = new Date('2025-08-21T21:00:00.000Z').getTime();
+
+        // Function to find and display backups
+        function loadBackups() {
+            const backups = [];
+            
+            // Get all backup keys
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('backup_')) {
+                    try {
+                        const backupData = JSON.parse(localStorage.getItem(key));
+                        const backupTime = new Date(backupData.timestamp).getTime();
+                        const timeDiff = Math.abs(backupTime - targetTime);
+                        
+                        backups.push({
+                            id: key,
+                            timestamp: backupData.timestamp,
+                            timeDiff: timeDiff,
+                            data: backupData,
+                            displayTime: new Date(backupData.timestamp).toLocaleString()
+                        });
+                    } catch (error) {
+                        console.warn(`Failed to parse backup: ${key}`, error);
+                    }
+                }
+            }
+            
+            // Sort by time difference (closest first)
+            backups.sort((a, b) => a.timeDiff - b.timeDiff);
+            
+            displayBackups(backups);
+        }
+
+        // Function to display backups
+        function displayBackups(backups) {
+            const container = document.getElementById('backups-container');
+            const controls = document.getElementById('restore-controls');
+            
+            if (backups.length === 0) {
+                container.innerHTML = '<p>No backups found in localStorage.</p>';
+                controls.style.display = 'none';
+                return;
+            }
+            
+            let html = '';
+            backups.forEach((backup, index) => {
+                const isClosest = index === 0;
+                const timeDiffMinutes = Math.round(backup.timeDiff / 1000 / 60);
+                const highlightClass = isClosest ? 'selected' : '';
+                
+                html += `
+                    <div class="backup-item ${highlightClass}" onclick="selectBackup('${backup.id}')">
+                        <strong>${backup.displayTime}</strong>
+                        <br>
+                        <small>Time difference from target: ${timeDiffMinutes} minutes</small>
+                        <br>
+                        <small>Sessions: ${backup.data.metadata.totalSessions}, Media: ${backup.data.metadata.totalMedia}</small>
+                        ${isClosest ? ' <span style="color: #28a745;">(Closest to target time)</span>' : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            controls.style.display = 'block';
+            
+            // Auto-select the closest backup
+            if (backups.length > 0) {
+                selectBackup(backups[0].id);
+            }
+        }
+
+        // Function to select a backup
+        function selectBackup(backupId) {
+            selectedBackup = backupId;
+            
+            // Update UI
+            document.querySelectorAll('.backup-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            event.target.closest('.backup-item').classList.add('selected');
+            
+            updateStatus(`Selected backup: ${backupId}`);
+        }
+
+        // Function to restore selected backup
+        function restoreSelectedBackup() {
+            if (!selectedBackup) {
+                updateStatus('Please select a backup first.', 'error');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to restore this backup? This will replace all current data.')) {
+                return;
+            }
+            
+            try {
+                const backupData = JSON.parse(localStorage.getItem(selectedBackup));
+                if (!backupData) {
+                    throw new Error(`Backup ${selectedBackup} not found`);
+                }
+                
+                updateStatus('🔄 Restoring backup...', 'info');
+                
+                // Clear current data
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('session_') || key.startsWith('media_'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                // Restore sessions
+                backupData.data.sessions.forEach(session => {
+                    const key = `session_${session.id}`;
+                    localStorage.setItem(key, JSON.stringify(session));
+                });
+                
+                // Restore media
+                backupData.data.media.forEach(media => {
+                    const key = `media_${media.id}`;
+                    localStorage.setItem(key, JSON.stringify(media));
+                });
+                
+                // Restore metadata
+                if (backupData.metadata.lastSessionId) {
+                    localStorage.setItem('lastSessionId', backupData.metadata.lastSessionId);
+                }
+                if (backupData.metadata.theme) {
+                    localStorage.setItem('theme', backupData.metadata.theme);
+                }
+                if (backupData.metadata.isAuthenticated) {
+                    localStorage.setItem('isAuthenticated', backupData.metadata.isAuthenticated);
+                }
+                
+                updateStatus(`✅ Restored ${backupData.metadata.totalSessions} sessions and ${backupData.metadata.totalMedia} media successfully!`, 'success');
+                
+                setTimeout(() => {
+                    alert('Restoration completed! Please go back to your main website and refresh the page.');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Failed to restore backup:', error);
+                updateStatus(`❌ Failed to restore backup: ${error.message}`, 'error');
+            }
+        }
+
+        // Function to clear all data
+        function clearAllData() {
+            if (!confirm('Are you sure you want to clear ALL data? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('session_') || key.startsWith('media_'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                updateStatus('✅ All data cleared successfully!', 'success');
+                loadBackups(); // Refresh the list
+                
+            } catch (error) {
+                console.error('Failed to clear data:', error);
+                updateStatus(`❌ Failed to clear data: ${error.message}`, 'error');
+            }
+        }
+
+        // Function to refresh backups
+        function refreshBackups() {
+            loadBackups();
+            updateStatus('Backups refreshed.', 'info');
+        }
+
+        // Function to update status
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            statusDiv.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+
+        // Load backups when page loads
+        window.onload = function() {
+            loadBackups();
+        };
+    </script>
+</body>
+</html>

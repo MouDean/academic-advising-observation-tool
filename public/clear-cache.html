@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache & Storage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Cache & Storage Cleaner</h1>
+        <p>This tool will help clear any cached data that might be blocking Cursor's Simple Browser.</p>
+        
+        <div class="info">
+            <strong>Current Status:</strong> Server is running on localhost:5173
+        </div>
+        
+        <div id="status"></div>
+        
+        <div style="margin: 20px 0;">
+            <button class="button" onclick="clearLocalStorage()">🗑️ Clear Local Storage</button>
+            <button class="button" onclick="clearSessionStorage()">🗑️ Clear Session Storage</button>
+            <button class="button danger" onclick="clearAllStorage()">💥 Clear All Storage</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button class="button" onclick="testMainApp()">🚀 Test Main App</button>
+            <button class="button" onclick="refreshPage()">🔄 Refresh This Page</button>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Instructions:</h3>
+            <ol style="text-align: left; display: inline-block;">
+                <li>Click "Clear All Storage" to remove any cached data</li>
+                <li>Click "Test Main App" to try accessing your application</li>
+                <li>If it works, go back to Cursor and try the Simple Browser again</li>
+                <li>If it still doesn't work, try refreshing the Simple Browser</li>
+            </ol>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/" class="button">🏠 Go to Main App</a>
+        </div>
+    </div>
+
+    <script>
+        function clearLocalStorage() {
+            try {
+                localStorage.clear();
+                updateStatus('✅ Local Storage cleared successfully!', 'success');
+            } catch (error) {
+                updateStatus('❌ Failed to clear Local Storage: ' + error.message, 'error');
+            }
+        }
+        
+        function clearSessionStorage() {
+            try {
+                sessionStorage.clear();
+                updateStatus('✅ Session Storage cleared successfully!', 'success');
+            } catch (error) {
+                updateStatus('❌ Failed to clear Session Storage: ' + error.message, 'error');
+            }
+        }
+        
+        function clearAllStorage() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Also try to clear any service worker registrations
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    });
+                }
+                
+                updateStatus('✅ All storage cleared successfully! Service workers unregistered.', 'success');
+            } catch (error) {
+                updateStatus('❌ Failed to clear all storage: ' + error.message, 'error');
+            }
+        }
+        
+        function testMainApp() {
+            try {
+                // Try to fetch the main app
+                fetch('/')
+                    .then(response => {
+                        if (response.ok) {
+                            updateStatus('✅ Main app is accessible! Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 1000);
+                        } else {
+                            updateStatus('❌ Main app returned status: ' + response.status, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        updateStatus('❌ Failed to access main app: ' + error.message, 'error');
+                    });
+            } catch (error) {
+                updateStatus('❌ Error testing main app: ' + error.message, 'error');
+            }
+        }
+        
+        function refreshPage() {
+            window.location.reload();
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            statusDiv.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+        
+        // Show current storage info
+        window.onload = function() {
+            const localKeys = Object.keys(localStorage).length;
+            const sessionKeys = Object.keys(sessionStorage).length;
+            
+            updateStatus(`📊 Current Storage: Local Storage (${localKeys} keys), Session Storage (${sessionKeys} keys)`);
+        };
+    </script>
+</body>
+</html>

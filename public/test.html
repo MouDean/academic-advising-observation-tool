@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-box {
+            background-color: white;
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🧪 Test Page Working!</h1>
+        <p>If you can see this, the server is working correctly.</p>
+        <p>Current time: <span id="time"></span></p>
+        <p>This is a simple HTML test page to verify server functionality.</p>
+    </div>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>
