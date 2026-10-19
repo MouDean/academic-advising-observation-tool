@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    @apply border-gray-200 outline-blue-500/50;
+  }
+  body {
+    @apply bg-white text-gray-900;
+    direction: ltr;
+    text-align: left;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  /* English font support */
+  html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  /* LTR support for form elements */
+  input, textarea, select {
+    direction: ltr;
+    text-align: left;
+  }
+  
+  /* LTR support for buttons */
+  button {
+    direction: ltr;
+  }
+  
+  /* LTR support for tabs */
+  .tabs-list {
+    direction: ltr;
+  }
+  
+  /* LTR support for cards */
+  .card {
+    direction: ltr;
+  }
+}
